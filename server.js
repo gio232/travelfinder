@@ -60,7 +60,7 @@ bot.start((ctx) => {
   ctx.reply('🌍 Welcome to Nomad OS! Use our professional dashboard to set up your filters.', {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '🚀 Open Nomad Dashboard', web_app: { url: process.env.WEBAPP_URL || 'https://travelfinder.onrender.com' } }]
+        [{ text: '🚀 Open Nomad Dashboard', web_app: { url: process.env.WEBAPP_URL || 'https://travelfinder-rigu.onrender.com' } }]
       ]
     }
   });
@@ -70,7 +70,7 @@ bot.command('app', (ctx) => {
   ctx.reply('Open the dashboard to configure your travel style:', {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '💎 Launch Dashboard', web_app: { url: process.env.WEBAPP_URL || 'https://travelfinder.onrender.com' } }]
+        [{ text: '💎 Launch Dashboard', web_app: { url: process.env.WEBAPP_URL || 'https://travelfinder-rigu.onrender.com' } }]
       ]
     }
   });
