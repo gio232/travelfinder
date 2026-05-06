@@ -107,11 +107,15 @@ bot.action(/city_(.+)/, (ctx) => {
 
 bot.action(/mode_(.+)/, async (ctx) => {
   const mode = ctx.match[1];
-  const session = sessions[ctx.from.id];
+  const session = sessions[ctx.from.id] || { lang: 'en', cityId: 'BER' };
   session.mode = mode;
 
   ctx.editMessageText('✅ Configuration Complete! Searching for the best deals now...');
   await generateAndSendDeal(session.cityId, 'beach', mode);
+});
+
+bot.command('ping', (ctx) => {
+  ctx.reply('📡 Nomad OS is Online and Connected!');
 });
 
 async function generateAndSendDeal(specificHubId = null, vacationType = null, mode = 'flight') {
@@ -182,14 +186,19 @@ async function generateAndSendDeal(specificHubId = null, vacationType = null, mo
       
       await new Promise(resolve => setTimeout(resolve, 3000));
     } catch (error) {
-      console.error(`❌ Error in generateAndSendDeal:`, error.message);
+      if (error.response && error.response.status === 429) {
+        console.warn('🚦 Rate limit hit (429). Sleeping for 1 minute...');
+        await new Promise(resolve => setTimeout(resolve, 60000));
+      } else {
+        console.error(`❌ Error in generateAndSendDeal:`, error.message);
+      }
     }
   }
 }
 
 // Запуск раз в 6 часов
 setInterval(generateAndSendDeal, 1000 * 60 * 60 * 6);
-generateAndSendDeal();
+// generateAndSendDeal(); // УДАЛЯЕМ АВТО-СТАРТ, чтобы не ловить 429 при деплое
 
 bot.launch();
 console.log('🚀 Nomad OS Server is running...');
