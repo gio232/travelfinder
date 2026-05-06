@@ -38,6 +38,11 @@ bot.command('settings', (ctx) => {
   });
 });
 
+bot.command('search', async (ctx) => {
+  ctx.reply('🔍 Searching for the best deals... Please wait.');
+  await generateAndSendDeal();
+});
+
 // Handle Origin City Selection
 bot.action('set_origin', (ctx) => {
   ctx.reply('Select your primary departure hub:', {
