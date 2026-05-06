@@ -92,8 +92,17 @@ async function generateAndSendDeal() {
       headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': 'sky-scrapper.p.rapidapi.com' }
     });
 
+    // Валидация данных (чтобы не было ошибки itineraries)
+    if (!flightResponse.data || !flightResponse.data.data || !flightResponse.data.data.itineraries) {
+      console.log('⚠️ API returned no data or reached limits. Skipping this cycle.');
+      return;
+    }
+
     const flight = flightResponse.data.data.itineraries[0];
-    if (!flight) return console.log('No deals found right now.');
+    if (!flight) {
+      console.log('ℹ️ No itineraries found for these parameters.');
+      return;
+    }
 
     const htmlTemplate = fs.readFileSync(path.join(__dirname, 'ticket_template.html'), 'utf8');
     
