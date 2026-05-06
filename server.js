@@ -3,6 +3,7 @@ const { Telegraf } = require('telegraf');
 const nodeHtmlToImage = require('node-html-to-image');
 const fs = require('fs');
 const path = require('path');
+const http = require('http'); // Добавляем модуль http
 
 // Load Localizations
 const i18n = JSON.parse(fs.readFileSync(path.join(__dirname, 'locales.json'), 'utf8'));
@@ -140,4 +141,14 @@ generateAndSendDeal();
 
 bot.launch();
 console.log('🚀 Nomad OS Server is running...');
+
+// --- RENDER PORT HACK ---
+// Render требует, чтобы Web Service слушал порт. Создаем "пустой" сервер.
+const PORT = process.env.PORT || 3000;
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Nomad OS is Alive\n');
+}).listen(PORT, () => {
+  console.log(`📡 Port Hack: Listening on port ${PORT}`);
+});
 
