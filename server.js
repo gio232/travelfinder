@@ -114,59 +114,57 @@ bot.action(/mode_(.+)/, async (ctx) => {
   await generateAndSendDeal(session.cityId, 'beach', mode);
 });
 
-// --- APP LOGIC ---
-const ORIGIN_HUBS = [
-  { name: 'Berlin', skyId: 'BER', entityId: '27547050' },
-  { name: 'Warsaw', skyId: 'WAW', entityId: '27537960' },
-  { name: 'Paris', skyId: 'PARI', entityId: '27539733' },
-  { name: 'Prague', skyId: 'PRG', entityId: '27545465' },
-  { name: 'London', skyId: 'LOND', entityId: '27544008' }
-];
-
-async function generateAndSendDeal(specificHub = null, vacationType = null) {
-  console.log(`🔍 Hunting for ${vacationType ? vacationType : 'Any'} deals...`);
+async function generateAndSendDeal(specificHubId = null, vacationType = null, mode = 'flight') {
+  console.log(`🔍 Hunting for ${vacationType || 'Any'} deals... Mode: ${mode}`);
   
-  const hubsToSearch = specificHub ? [specificHub] : ORIGIN_HUBS;
+  // Если hubId не передан, берем Берлин по умолчанию
+  const hubsToSearch = specificHubId ? [{ id: specificHubId, name: 'Selected City' }] : [{ id: 'BER', name: 'Berlin' }];
   
   for (const hub of hubsToSearch) {
     try {
-      // Определяем цели: если тип отдыха выбран, ищем по его тегам, иначе - ANY
-      const selectedType = VACATION_TYPES.find(t => t.id === vacationType);
-      const destinations = selectedType ? selectedType.tags : ['ANY'];
+      const destinations = ['ANY']; // Для теста ищем везде
 
       for (const dest of destinations) {
-        console.log(`✈️ Checking ${hub.name} -> ${dest}...`);
+        console.log(`✈️ Checking Fly-Scraper: ${hub.id} -> ${dest}...`);
         
-        const flightResponse = await axios.get('https://fly-scraper.p.rapidapi.com/v2/flights/search-roundtrip', {
-          params: { 
-            originSkyId: hub.skyId, 
-            destinationSkyId: dest
-          },
-          headers: { 
-            'x-rapidapi-key': RAPID_API_KEY, 
-            'x-rapidapi-host': FLY_SCRAPER_HOST 
-          }
+        const response = await axios.get('https://fly-scraper.p.rapidapi.com/v2/flights/search-roundtrip', {
+          params: { originSkyId: hub.id, destinationSkyId: dest },
+          headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': FLY_SCRAPER_HOST }
         });
 
-        if (!flightResponse.data || !flightResponse.data.data || !flightResponse.data.data.itineraries) continue;
-
-        const flight = flightResponse.data.data.itineraries[0];
-        if (!flight) continue;
-
-        const destinationName = flight.legs[0].destination.name;
-        const htmlTemplate = fs.readFileSync(path.join(__dirname, 'ticket_template.html'), 'utf8');
+        // ЛОГИРУЕМ СТРУКТУРУ (чтобы понять, где лежат данные)
+        console.log('📡 API Response Keys:', Object.keys(response.data));
         
+        // У Fly-Scraper данные обычно лежат в response.data.itineraries или response.data.data.itineraries
+        const itineraries = response.data.itineraries || (response.data.data ? response.data.data.itineraries : null);
+
+        if (!itineraries || itineraries.length === 0) {
+          console.log(`⚠️ No itineraries found for ${hub.id}.`);
+          continue;
+        }
+
+        const flight = itineraries[0];
+        const destinationName = flight.legs[0].destination.name;
+        
+        console.log(`✅ Found flight to ${destinationName}! Generating image...`);
+
+        const htmlTemplate = fs.readFileSync(path.join(__dirname, 'ticket_template.html'), 'utf8');
+        const isCombo = mode === 'combo';
+        const flightPrice = flight.price.raw;
+        const hotelPrice = isCombo ? 250 : 0;
+        const totalPrice = flightPrice + hotelPrice;
+
         const image = await nodeHtmlToImage({
           html: htmlTemplate,
           content: {
             ORIGIN: hub.name,
             DESTINATION: destinationName,
-            HOTEL_NAME: 'Handpicked Elite Stay',
+            HOTEL_NAME: isCombo ? 'Elite Resort & Spa' : 'Flight Only',
             DEPARTURE_DATE: flight.legs[0].departure.split('T')[0],
             NIGHTS: '7',
-            RATING: '4.8',
-            PRICE: flight.price.raw,
-            SAVINGS: '45'
+            RATING: '4.9',
+            PRICE: totalPrice,
+            SAVINGS: isCombo ? '35' : '15'
           }
         });
 
@@ -174,17 +172,17 @@ async function generateAndSendDeal(specificHub = null, vacationType = null) {
         const t = i18n[userLang];
 
         await bot.telegram.sendPhoto(CHAT_ID, { source: image }, {
-          caption: `🔥 **${t.new_deal} (${selectedType ? selectedType.name : 'Top Choice'})**\n💰 ${t.price}: ${flight.price.formatted}\n📍 Route: ${hub.name} ✈ ${destinationName}\n\n[${t.checkout}](https://www.skyscanner.net)`,
+          caption: `🔥 **${t.new_deal}**\n💰 Price: ${flight.price.formatted}${isCombo ? ' (+ Hotel)' : ''}\n📍 ${hub.id} ✈ ${destinationName}\n\n[Book Now](https://www.skyscanner.net)`,
           parse_mode: 'Markdown'
         });
 
-        console.log(`✅ Targeted deal from ${hub.name} sent!`);
-        break; // Отправляем один лучший вариант для хаба и переходим к следующему
+        console.log(`🎉 Success! Message sent to ${CHAT_ID}`);
+        break; 
       }
       
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
     } catch (error) {
-      console.error(`❌ Error scanning ${hub.name}:`, error.message);
+      console.error(`❌ Error in generateAndSendDeal:`, error.message);
     }
   }
 }
