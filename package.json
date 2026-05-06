@@ -2,9 +2,9 @@
   "name": "travel-intel-os",
   "version": "1.0.0",
   "description": "Premium Travel Intelligence Dashboard",
-  "main": "main.js",
+  "main": "server.js",
   "scripts": {
-    "start": "npx serve ."
+    "start": "node server.js"
   },
   "dependencies": {
     "axios": "^1.16.0",
