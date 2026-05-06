@@ -7,10 +7,10 @@ const path = require('path');
 // Load Localizations
 const i18n = JSON.parse(fs.readFileSync(path.join(__dirname, 'locales.json'), 'utf8'));
 
-// --- CONFIG ---
-const RAPID_API_KEY = '297db5bccfmsh2a6dee75f1038d2p165a62jsn91af72450106';
-const TELEGRAM_BOT_TOKEN = '8601612357:AAGntRC84iVcnx2XyIbETUtIX8G38F-SKZQ';
-const CHAT_ID = '1157863036';
+// --- CONFIG (Using Environment Variables) ---
+const RAPID_API_KEY = process.env.RAPID_API_KEY || '297db5bccfmsh2a6dee75f1038d2p165a62jsn91af72450106';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8601612357:AAGntRC84iVcnx2XyIbETUtIX8G38F-SKZQ';
+const CHAT_ID = process.env.CHAT_ID || '1157863036';
 
 const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
 

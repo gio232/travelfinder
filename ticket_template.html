@@ -1,59 +1,118 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<style>
-  body {
-    width: 800px;
-    height: 400px;
-    background: #0a0c10;
-    color: white;
-    font-family: 'Inter', sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    margin: 0;
-  }
-  .ticket {
-    width: 760px;
-    height: 360px;
-    background: linear-gradient(135deg, #161b22 0%, #0d1117 100%);
-    border: 1px solid #30363d;
-    border-radius: 20px;
-    display: flex;
-    overflow: hidden;
-    position: relative;
-  }
-  .left {
-    flex: 2;
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-  .right {
-    flex: 1;
-    background: #58a6ff;
-    color: #0a0c10;
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-  }
-  .city { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
-  .arrow { color: #58a6ff; margin: 0 10px; font-size: 24px; }
-  .hotel { font-size: 18px; color: #8b949e; margin-top: 10px; }
-  .details { display: flex; gap: 30px; margin-top: 40px; }
-  .detail-item span { display: block; font-size: 12px; color: #8b949e; text-transform: uppercase; margin-bottom: 5px; }
-  .detail-item b { font-size: 18px; }
-  .price { font-size: 48px; font-weight: 900; }
-  .currency { font-size: 24px; font-weight: 400; }
-  .savings { background: #238636; color: white; padding: 4px 10px; border-radius: 5px; font-size: 14px; font-weight: 700; margin-top: 10px; }
-  .qr-placeholder { width: 80px; height: 80px; border: 1px solid #30363d; margin-bottom: 20px; opacity: 0.5; }
-</style>
+  <style>
+    body {
+      width: 800px;
+      height: 400px;
+      background: #0a0c10;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ticket {
+      width: 760px;
+      height: 360px;
+      background: linear-gradient(135deg, #161b22 0%, #0d1117 100%);
+      border: 1px solid #30363d;
+      border-radius: 20px;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .left {
+      flex: 2;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .right {
+      flex: 1;
+      background: #58a6ff;
+      color: #0a0c10;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .city {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .arrow {
+      color: #58a6ff;
+      margin: 0 10px;
+      font-size: 24px;
+    }
+
+    .hotel {
+      font-size: 18px;
+      color: #8b949e;
+      margin-top: 10px;
+    }
+
+    .details {
+      display: flex;
+      gap: 30px;
+      margin-top: 40px;
+    }
+
+    .detail-item span {
+      display: block;
+      font-size: 12px;
+      color: #8b949e;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .detail-item b {
+      font-size: 18px;
+    }
+
+    .price {
+      font-size: 48px;
+      font-weight: 900;
+    }
+
+    .currency {
+      font-size: 24px;
+      font-weight: 400;
+    }
+
+    .savings {
+      background: #238636;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+
+    .qr-placeholder {
+      width: 80px;
+      height: 80px;
+      border: 1px solid #30363d;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+  </style>
 </head>
+
 <body>
   <div class="ticket">
     <div class="left">
@@ -75,4 +134,5 @@
     </div>
   </div>
 </body>
+
 </html>
