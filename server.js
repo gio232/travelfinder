@@ -15,6 +15,9 @@ const RAPID_API_KEY = process.env.RAPID_API_KEY || '297db5bccfmsh2a6dee75f1038d2
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8601612357:AAGntRC84iVcnx2XyIbETUtIX8G38F-SKZQ';
 const CHAT_ID = process.env.CHAT_ID || '1157863036';
 
+const FLY_SCRAPER_HOST = 'fly-scraper.p.rapidapi.com';
+const SKY_SCRAPPER_HOST = 'sky-scrapper.p.rapidapi.com';
+
 // --- DATA MAPPING ---
 const COUNTRY_HUBS = {
   'Germany': [{ name: 'Berlin', skyId: 'BER' }, { name: 'Munich', skyId: 'MUC' }, { name: 'Frankfurt', skyId: 'FRA' }],
@@ -176,15 +179,15 @@ async function generateAndSendDeal(specificHub = null, vacationType = null) {
       for (const dest of destinations) {
         console.log(`✈️ Checking ${hub.name} -> ${dest}...`);
         
-        const flightResponse = await axios.get('https://sky-scrapper.p.rapidapi.com/api/v2/flights/searchFlightsComplete', {
+        const flightResponse = await axios.get('https://fly-scraper.p.rapidapi.com/v2/flights/search-roundtrip', {
           params: { 
             originSkyId: hub.skyId, 
-            destinationSkyId: dest, 
-            originEntityId: hub.entityId, 
-            destinationEntityId: '', 
-            currency: 'USD' 
+            destinationSkyId: dest
           },
-          headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': 'sky-scrapper.p.rapidapi.com' }
+          headers: { 
+            'x-rapidapi-key': RAPID_API_KEY, 
+            'x-rapidapi-host': FLY_SCRAPER_HOST 
+          }
         });
 
         if (!flightResponse.data || !flightResponse.data.data || !flightResponse.data.data.itineraries) continue;
@@ -247,17 +250,28 @@ app.get('/api/search', async (req, res) => {
   
   try {
     // Упрощенный поиск для Mini App (быстрый ответ)
-    const flightResponse = await axios.get('https://sky-scrapper.p.rapidapi.com/api/v2/flights/searchFlightsComplete', {
-      params: { originSkyId: origin, destinationSkyId: 'ANY', currency: 'USD' },
-      headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': 'sky-scrapper.p.rapidapi.com' }
+    const flightResponse = await axios.get('https://fly-scraper.p.rapidapi.com/v2/flights/search-roundtrip', {
+      params: { originSkyId: origin, destinationSkyId: 'ANY' },
+      headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': FLY_SCRAPER_HOST }
     });
 
-    const deals = flightResponse.data.data.itineraries.slice(0, 5).map(f => ({
-      origin: origin,
-      destination: f.legs[0].destination.name,
-      price: f.price.formatted,
-      date: f.legs[0].departure.split('T')[0]
-    }));
+    const deals = flightResponse.data.data.itineraries.slice(0, 5).map(f => {
+      const flightPrice = f.price.raw;
+      const isCombo = type === 'combo';
+      
+      // В режиме Combo добавляем динамическую стоимость отеля (от 150 до 400 USD за неделю)
+      const mockHotelPrice = isCombo ? Math.floor(Math.random() * (400 - 150) + 150) : 0;
+      const totalPrice = flightPrice + mockHotelPrice;
+      
+      return {
+        origin: origin,
+        destination: f.legs[0].destination.name,
+        price: isCombo ? `$${totalPrice.toFixed(0)}` : f.price.formatted,
+        date: f.legs[0].departure.split('T')[0],
+        mode: type,
+        hotelIncluded: isCombo
+      };
+    });
 
     res.json({ success: true, deals });
   } catch (error) {

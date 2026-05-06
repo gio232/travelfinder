@@ -3,51 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nomad OS | Travel Terminal</title>
+  <title>Nomad OS | Premium Travel Intelligence</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
   <div id="app" class="dashboard">
-    <!-- Screen 1: Language -->
+    <!-- Step 1: Language -->
     <div id="screen-lang" class="screen">
       <div class="header">
         <h1>NOMAD OS</h1>
-        <p>Select your language</p>
+        <p>Select Language / Выберите язык / Оберіть мову</p>
       </div>
       <div class="grid">
         <div class="option-btn" onclick="next('lang', 'en')">🇺🇸 English</div>
+        <div class="option-btn" onclick="next('lang', 'ru')">🇷🇺 Русский</div>
+        <div class="option-btn" onclick="next('lang', 'ua')">🇺🇦 Українська</div>
         <div class="option-btn" onclick="next('lang', 'de')">🇩🇪 Deutsch</div>
-        <div class="option-btn" onclick="next('lang', 'pl')">🇵🇱 Polski</div>
       </div>
     </div>
 
-    <!-- Screen 2: Country -->
+    <!-- Step 2: Service Mode -->
+    <div id="screen-mode" class="screen" style="display:none">
+      <div class="header">
+        <h1 id="txt-mode-title">Service Mode</h1>
+        <p id="txt-mode-desc">What are we looking for?</p>
+      </div>
+      <div class="grid">
+        <div class="option-btn large" onclick="next('mode', 'flight')">
+          <span>✈️</span>
+          <div class="btn-label">
+            <strong id="txt-only-flight">Only Flight</strong>
+          </div>
+        </div>
+        <div class="option-btn large" onclick="next('mode', 'combo')">
+          <span>🏨</span>
+          <div class="btn-label">
+            <strong id="txt-combo">Flight + Hotel</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Country -->
     <div id="screen-country" class="screen" style="display:none">
       <div class="header">
-        <h1>Choose Country</h1>
+        <h1 id="txt-country-title">Select Country</h1>
       </div>
-      <div class="grid" id="country-list"></div>
+      <div class="grid search-grid" id="country-list"></div>
     </div>
 
-    <!-- Screen 3: Hubs -->
+    <!-- Step 4: Hubs -->
     <div id="screen-hubs" class="screen" style="display:none">
       <div class="header">
-        <h1>Select Hubs</h1>
-        <p>You can select multiple</p>
+        <h1 id="txt-hubs-title">Select Cities</h1>
       </div>
       <div class="grid" id="hub-list"></div>
-      <button class="footer-btn" onclick="goToSearch()">CONTINUE</button>
+      <button class="footer-btn" onclick="goToSearch()" id="txt-continue">CONTINUE</button>
     </div>
 
-    <!-- Screen 4: Results -->
+    <!-- Screen 5: Results -->
     <div id="screen-results" class="screen" style="display:none">
       <div class="header">
-        <h1>Hot Deals</h1>
-        <p id="search-status">Searching the globe...</p>
+        <h1 id="txt-results-title">Elite Deals</h1>
+        <p id="search-status">Analyzing...</p>
       </div>
       <div id="results-list" class="results-container"></div>
-      <button class="footer-btn secondary" onclick="restart()">NEW SEARCH</button>
+      <button class="footer-btn secondary" onclick="restart()" id="txt-new-search">NEW SEARCH</button>
     </div>
   </div>
 
@@ -55,34 +77,46 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const state = {
-      lang: '',
-      country: '',
-      hubs: [],
-      type: 'beach'
+    const state = { lang: 'en', mode: 'flight', country: '', hubs: [] };
+    let HUB_DATA = {};
+
+    const translations = {
+      en: { mode: "Service Mode", desc: "What are we looking for?", flight: "Only Flight", combo: "Flight + Hotel", country: "Select Country", hubs: "Select Cities", cont: "CONTINUE", results: "Elite Deals", search: "Searching...", new: "NEW SEARCH" },
+      ru: { mode: "Режим поиска", desc: "Что ищем?", flight: "Только перелет", combo: "Перелет + Отель", country: "Выберите страну", hubs: "Выберите города", cont: "ПРОДОЛЖИТЬ", results: "Горячие предложения", search: "Ищем лучшие варианты...", new: "НОВЫЙ ПОИСК" },
+      ua: { mode: "Режим пошуку", desc: "Що шукаємо?", flight: "Тільки переліт", combo: "Переліт + Готель", country: "Оберіть країну", hubs: "Оберіть міста", cont: "ПРОДОВЖИТИ", results: "Гарячі пропозиції", search: "Шукаємо найкращі варіанти...", new: "НОВИЙ ПОШУК" }
     };
 
-    const COUNTRY_HUBS = {
-      'Germany': ['BER', 'MUC', 'FRA'],
-      'Poland': ['WAW', 'KRK', 'GDN'],
-      'France': ['PARI', 'NCE', 'LYS'],
-      'Spain': ['MAD', 'BCN', 'AGP'],
-      'Italy': ['ROME', 'MILA', 'VCE'],
-      'UK': ['LOND', 'MAN', 'EDI'],
-      'Norway': ['OSL', 'BGO'],
-      'Switzerland': ['ZRH', 'GVA']
-    };
+    async function init() {
+      const res = await fetch('hubs.json');
+      HUB_DATA = await res.json();
+    }
+    init();
 
     function next(field, value) {
       state[field] = value;
-      
       if(field === 'lang') {
+        applyTranslation(value);
+        showScreen('mode');
+      } else if(field === 'mode') {
         showScreen('country');
         renderCountries();
       } else if(field === 'country') {
         showScreen('hubs');
         renderHubs();
       }
+    }
+
+    function applyTranslation(lang) {
+      const t = translations[lang] || translations.en;
+      document.getElementById('txt-mode-title').innerText = t.mode;
+      document.getElementById('txt-mode-desc').innerText = t.desc;
+      document.getElementById('txt-only-flight').innerText = t.flight;
+      document.getElementById('txt-combo').innerText = t.combo;
+      document.getElementById('txt-country-title').innerText = t.country;
+      document.getElementById('txt-hubs-title').innerText = t.hubs;
+      document.getElementById('txt-continue').innerText = t.cont;
+      document.getElementById('txt-results-title').innerText = t.results;
+      document.getElementById('txt-new-search').innerText = t.new;
     }
 
     function showScreen(id) {
@@ -92,61 +126,64 @@
 
     function renderCountries() {
       const container = document.getElementById('country-list');
-      container.innerHTML = Object.keys(COUNTRY_HUBS).map(c => 
-        `<div class="option-btn" onclick="next('country', '${c}')">${c}</div>`
-      ).join('');
+      container.innerHTML = Object.keys(HUB_DATA).map(c => {
+        const name = HUB_DATA[c].name[state.lang] || c;
+        return `<div class="option-btn" onclick="next('country', '${c}')">${name}</div>`;
+      }).join('');
     }
 
     function renderHubs() {
       const container = document.getElementById('hub-list');
-      container.innerHTML = COUNTRY_HUBS[state.country].map(h => 
-        `<div class="option-btn" id="hub-${h}" onclick="toggleHub('${h}')">${h}</div>`
-      ).join('');
+      const hubs = HUB_DATA[state.country].hubs;
+      container.innerHTML = hubs.map(h => {
+        const name = h.names[state.lang] || h.city;
+        return `<div class="option-btn" id="hub-${h.city}" onclick="toggleHub('${h.city}', '${h.ids.join(',')}')">${name}</div>`;
+      }).join('');
     }
 
-    function toggleHub(h) {
-      const idx = state.hubs.indexOf(h);
-      if(idx > -1) state.hubs.splice(idx, 1);
-      else state.hubs.push(h);
-      document.getElementById('hub-' + h).classList.toggle('active');
+    let selectedIds = [];
+    function toggleHub(city, ids) {
+      const idList = ids.split(',');
+      const btn = document.getElementById('hub-' + city);
+      btn.classList.toggle('active');
+      
+      if(btn.classList.contains('active')) {
+        selectedIds = [...selectedIds, ...idList];
+      } else {
+        selectedIds = selectedIds.filter(id => !idList.includes(id));
+      }
     }
 
     async function goToSearch() {
-      if(state.hubs.length === 0) return alert('Select at least one hub!');
+      if(selectedIds.length === 0) return alert('Select hubs!');
       showScreen('results');
-      
       const resultsContainer = document.getElementById('results-list');
-      resultsContainer.innerHTML = '<div class="loader">🔍 Analyzing airfares...</div>';
+      resultsContainer.innerHTML = '<div class="loader">🔍 Analyzing data...</div>';
 
       try {
-        const response = await fetch(`/api/search?origin=${state.hubs[0]}&type=${state.type}`);
+        const response = await fetch(`/api/search?origin=${selectedIds[0]}&type=${state.mode}`);
         const data = await response.json();
         
         if(data.success) {
-          document.getElementById('search-status').innerText = `Found ${data.deals.length} elite deals`;
           resultsContainer.innerHTML = data.deals.map(deal => `
             <div class="card result-card">
               <div class="deal-header">
                 <span class="route">${deal.origin} ✈ ${deal.destination}</span>
                 <span class="price">${deal.price}</span>
               </div>
-              <p class="date">📅 ${deal.date}</p>
-              <button class="share-btn" onclick="shareDeal('${deal.destination}', '${deal.price}')">SHARE WITH FRIEND</button>
+              <p class="date">📅 ${deal.date} | ${state.mode === 'combo' ? '🏨 Combo Package' : '✈ Flight Only'}</p>
+              <button class="share-btn" onclick="shareDeal('${deal.destination}', '${deal.price}')">SHARE</button>
             </div>
           `).join('');
         }
-      } catch (e) {
-        resultsContainer.innerHTML = '<p>Error loading deals. Try again.</p>';
-      }
+      } catch (e) { resultsContainer.innerHTML = '<p>Error.</p>'; }
     }
 
     function shareDeal(dest, price) {
       tg.sendData(JSON.stringify({ action: 'share', dest, price }));
     }
 
-    function restart() {
-      location.reload();
-    }
+    function restart() { location.reload(); }
   </script>
 </body>
 </html>

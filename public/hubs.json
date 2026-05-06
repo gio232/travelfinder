@@ -1,0 +1,24 @@
+{
+  "Germany": {
+    "name": { "en": "Germany", "de": "Deutschland", "ru": "Германия", "ua": "Німеччина" },
+    "hubs": [
+      { "city": "Berlin", "names": { "en": "Berlin", "de": "Berlin", "ru": "Берлин", "ua": "Берлін" }, "ids": ["BER"] },
+      { "city": "Munich", "names": { "en": "Munich", "de": "München", "ru": "Мюнхен", "ua": "Мюнхен" }, "ids": ["MUC"] },
+      { "city": "Dusseldorf", "names": { "en": "Dusseldorf", "de": "Düsseldorf", "ru": "Дюссельдорф", "ua": "Дюссельдорф" }, "ids": ["DUS", "NRN"] }
+    ]
+  },
+  "Poland": {
+    "name": { "en": "Poland", "de": "Polen", "ru": "Польша", "ua": "Польща" },
+    "hubs": [
+      { "city": "Warsaw", "names": { "en": "Warsaw", "de": "Warschau", "ru": "Варшава", "ua": "Варшава" }, "ids": ["WAW", "WMI"] },
+      { "city": "Krakow", "names": { "en": "Krakow", "de": "Krakau", "ru": "Краков", "ua": "Краків" }, "ids": ["KRK"] }
+    ]
+  },
+  "Ukraine": {
+    "name": { "en": "Ukraine", "de": "Ukraine", "ru": "Украина", "ua": "Україна" },
+    "hubs": [
+      { "city": "Kyiv", "names": { "en": "Kyiv", "de": "Kiew", "ru": "Киев", "ua": "Київ" }, "ids": ["KBP", "IEV"] },
+      { "city": "Lviv", "names": { "en": "Lviv", "de": "Lemberg", "ru": "Львов", "ua": "Львів" }, "ids": ["LWO"] }
+    ]
+  }
+}
