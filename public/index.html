@@ -3,78 +3,149 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nomad OS Intelligence</title>
+  <title>Nomad OS | Travel Terminal</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <div class="dashboard">
-    <div class="header">
-      <h1>NOMAD OS</h1>
-      <p>Intelligence Travel Terminal</p>
-    </div>
-
-    <div class="card">
-      <h3>1. Select Country</h3>
-      <div class="grid" id="country-grid">
-        <div class="option-btn" onclick="selectCountry('Germany')">🇩🇪 Germany</div>
-        <div class="option-btn" onclick="selectCountry('Poland')">🇵🇱 Poland</div>
-        <div class="option-btn" onclick="selectCountry('France')">🇫🇷 France</div>
-        <div class="option-btn" onclick="selectCountry('Spain')">🇪🇸 Spain</div>
+  <div id="app" class="dashboard">
+    <!-- Screen 1: Language -->
+    <div id="screen-lang" class="screen">
+      <div class="header">
+        <h1>NOMAD OS</h1>
+        <p>Select your language</p>
+      </div>
+      <div class="grid">
+        <div class="option-btn" onclick="next('lang', 'en')">🇺🇸 English</div>
+        <div class="option-btn" onclick="next('lang', 'de')">🇩🇪 Deutsch</div>
+        <div class="option-btn" onclick="next('lang', 'pl')">🇵🇱 Polski</div>
       </div>
     </div>
 
-    <div class="card">
-      <h3>2. Vacation Style</h3>
-      <div class="grid" id="type-grid">
-        <div class="option-btn" onclick="selectType('beach')">🏝 Beach</div>
-        <div class="option-btn" onclick="selectType('mountains')">🏔 Mountains</div>
-        <div class="option-btn" onclick="selectType('city')">🏛 City</div>
-        <div class="option-btn" onclick="selectType('active')">🥾 Active</div>
+    <!-- Screen 2: Country -->
+    <div id="screen-country" class="screen" style="display:none">
+      <div class="header">
+        <h1>Choose Country</h1>
       </div>
+      <div class="grid" id="country-list"></div>
     </div>
 
-    <div style="height: 100px;"></div>
+    <!-- Screen 3: Hubs -->
+    <div id="screen-hubs" class="screen" style="display:none">
+      <div class="header">
+        <h1>Select Hubs</h1>
+        <p>You can select multiple</p>
+      </div>
+      <div class="grid" id="hub-list"></div>
+      <button class="footer-btn" onclick="goToSearch()">CONTINUE</button>
+    </div>
 
-    <button class="footer-btn" onclick="saveProfile()">SAVE & SEARCH DEALS</button>
+    <!-- Screen 4: Results -->
+    <div id="screen-results" class="screen" style="display:none">
+      <div class="header">
+        <h1>Hot Deals</h1>
+        <p id="search-status">Searching the globe...</p>
+      </div>
+      <div id="results-list" class="results-container"></div>
+      <button class="footer-btn secondary" onclick="restart()">NEW SEARCH</button>
+    </div>
   </div>
 
   <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    let selectedCountry = '';
-    let selectedType = '';
+    const state = {
+      lang: '',
+      country: '',
+      hubs: [],
+      type: 'beach'
+    };
 
-    function selectCountry(country) {
-      selectedCountry = country;
-      document.querySelectorAll('#country-grid .option-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if(btn.innerText.includes(country)) btn.classList.add('active');
-      });
-    }
+    const COUNTRY_HUBS = {
+      'Germany': ['BER', 'MUC', 'FRA'],
+      'Poland': ['WAW', 'KRK', 'GDN'],
+      'France': ['PARI', 'NCE', 'LYS'],
+      'Spain': ['MAD', 'BCN', 'AGP'],
+      'Italy': ['ROME', 'MILA', 'VCE'],
+      'UK': ['LOND', 'MAN', 'EDI'],
+      'Norway': ['OSL', 'BGO'],
+      'Switzerland': ['ZRH', 'GVA']
+    };
 
-    function selectType(type) {
-      selectedType = type;
-      document.querySelectorAll('#type-grid .option-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if(btn.innerText.toLowerCase().includes(type)) btn.classList.add('active');
-      });
-    }
-
-    function saveProfile() {
-      if(!selectedCountry || !selectedType) {
-        alert('Please select both country and style!');
-        return;
+    function next(field, value) {
+      state[field] = value;
+      
+      if(field === 'lang') {
+        showScreen('country');
+        renderCountries();
+      } else if(field === 'country') {
+        showScreen('hubs');
+        renderHubs();
       }
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+      document.getElementById('screen-' + id).style.display = 'block';
+    }
+
+    function renderCountries() {
+      const container = document.getElementById('country-list');
+      container.innerHTML = Object.keys(COUNTRY_HUBS).map(c => 
+        `<div class="option-btn" onclick="next('country', '${c}')">${c}</div>`
+      ).join('');
+    }
+
+    function renderHubs() {
+      const container = document.getElementById('hub-list');
+      container.innerHTML = COUNTRY_HUBS[state.country].map(h => 
+        `<div class="option-btn" id="hub-${h}" onclick="toggleHub('${h}')">${h}</div>`
+      ).join('');
+    }
+
+    function toggleHub(h) {
+      const idx = state.hubs.indexOf(h);
+      if(idx > -1) state.hubs.splice(idx, 1);
+      else state.hubs.push(h);
+      document.getElementById('hub-' + h).classList.toggle('active');
+    }
+
+    async function goToSearch() {
+      if(state.hubs.length === 0) return alert('Select at least one hub!');
+      showScreen('results');
       
-      const data = {
-        country: selectedCountry,
-        type: selectedType
-      };
-      
-      tg.sendData(JSON.stringify(data));
-      tg.close();
+      const resultsContainer = document.getElementById('results-list');
+      resultsContainer.innerHTML = '<div class="loader">🔍 Analyzing airfares...</div>';
+
+      try {
+        const response = await fetch(`/api/search?origin=${state.hubs[0]}&type=${state.type}`);
+        const data = await response.json();
+        
+        if(data.success) {
+          document.getElementById('search-status').innerText = `Found ${data.deals.length} elite deals`;
+          resultsContainer.innerHTML = data.deals.map(deal => `
+            <div class="card result-card">
+              <div class="deal-header">
+                <span class="route">${deal.origin} ✈ ${deal.destination}</span>
+                <span class="price">${deal.price}</span>
+              </div>
+              <p class="date">📅 ${deal.date}</p>
+              <button class="share-btn" onclick="shareDeal('${deal.destination}', '${deal.price}')">SHARE WITH FRIEND</button>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        resultsContainer.innerHTML = '<p>Error loading deals. Try again.</p>';
+      }
+    }
+
+    function shareDeal(dest, price) {
+      tg.sendData(JSON.stringify({ action: 'share', dest, price }));
+    }
+
+    function restart() {
+      location.reload();
     }
   </script>
 </body>

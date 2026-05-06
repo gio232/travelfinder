@@ -17,27 +17,17 @@ const CHAT_ID = process.env.CHAT_ID || '1157863036';
 
 // --- DATA MAPPING ---
 const COUNTRY_HUBS = {
-  'Germany': [
-    { name: 'Berlin', skyId: 'BER', entityId: '27547050' },
-    { name: 'Munich', skyId: 'MUC', entityId: '27536640' },
-    { name: 'Frankfurt', skyId: 'FRA', entityId: '27541623' }
-  ],
-  'Poland': [
-    { name: 'Warsaw', skyId: 'WAW', entityId: '27537960' },
-    { name: 'Krakow', skyId: 'KRK', entityId: '27543209' }
-  ],
-  'France': [
-    { name: 'Paris', skyId: 'PARI', entityId: '27539733' },
-    { name: 'Nice', skyId: 'NCE', entityId: '27539658' }
-  ],
-  'Spain': [
-    { name: 'Madrid', skyId: 'MAD', entityId: '27538749' },
-    { name: 'Barcelona', skyId: 'BCN', entityId: '27544055' }
-  ],
-  'Italy': [
-    { name: 'Rome', skyId: 'ROME', entityId: '27543886' },
-    { name: 'Milan', skyId: 'MILA', entityId: '27544033' }
-  ]
+  'Germany': [{ name: 'Berlin', skyId: 'BER' }, { name: 'Munich', skyId: 'MUC' }, { name: 'Frankfurt', skyId: 'FRA' }],
+  'Poland': [{ name: 'Warsaw', skyId: 'WAW' }, { name: 'Krakow', skyId: 'KRK' }, { name: 'Gdansk', skyId: 'GDN' }],
+  'France': [{ name: 'Paris', skyId: 'PARI' }, { name: 'Nice', skyId: 'NCE' }, { name: 'Lyon', skyId: 'LYS' }],
+  'Spain': [{ name: 'Madrid', skyId: 'MAD' }, { name: 'Barcelona', skyId: 'BCN' }, { name: 'Malaga', skyId: 'AGP' }],
+  'Italy': [{ name: 'Rome', skyId: 'ROME' }, { name: 'Milan', skyId: 'MILA' }, { name: 'Venice', skyId: 'VCE' }],
+  'UK': [{ name: 'London', skyId: 'LOND' }, { name: 'Manchester', skyId: 'MAN' }, { name: 'Edinburgh', skyId: 'EDI' }],
+  'Norway': [{ name: 'Oslo', skyId: 'OSL' }, { name: 'Bergen', skyId: 'BGO' }],
+  'Switzerland': [{ name: 'Zurich', skyId: 'ZRH' }, { name: 'Geneva', skyId: 'GVA' }],
+  'Austria': [{ name: 'Vienna', skyId: 'VIE' }, { name: 'Salzburg', skyId: 'SZG' }],
+  'Netherlands': [{ name: 'Amsterdam', skyId: 'AMS' }],
+  'Portugal': [{ name: 'Lisbon', skyId: 'LIS' }, { name: 'Porto', skyId: 'OPO' }]
 };
 
 const VACATION_TYPES = [
@@ -250,6 +240,30 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, 'public'))); // Абсолютный путь
 
 app.get('/ping', (req, res) => res.send('Pong! Nomad OS is live.'));
+
+app.get('/api/search', async (req, res) => {
+  const { origin, type } = req.query;
+  console.log(`📡 API Search Request: From ${origin}, Type ${type}`);
+  
+  try {
+    // Упрощенный поиск для Mini App (быстрый ответ)
+    const flightResponse = await axios.get('https://sky-scrapper.p.rapidapi.com/api/v2/flights/searchFlightsComplete', {
+      params: { originSkyId: origin, destinationSkyId: 'ANY', currency: 'USD' },
+      headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': 'sky-scrapper.p.rapidapi.com' }
+    });
+
+    const deals = flightResponse.data.data.itineraries.slice(0, 5).map(f => ({
+      origin: origin,
+      destination: f.legs[0].destination.name,
+      price: f.price.formatted,
+      date: f.legs[0].departure.split('T')[0]
+    }));
+
+    res.json({ success: true, deals });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
