@@ -247,7 +247,9 @@ console.log('🚀 Nomad OS Server is running...');
 
 // --- MINI APP SERVER ---
 const PORT = process.env.PORT || 3000;
-app.use(express.static('public')); // Раздаем файлы из папки public
+app.use(express.static(path.join(__dirname, 'public'))); // Абсолютный путь
+
+app.get('/ping', (req, res) => res.send('Pong! Nomad OS is live.'));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
