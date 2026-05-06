@@ -211,11 +211,17 @@ app.get('/api/search', async (req, res) => {
       headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': FLY_SCRAPER_HOST }
     });
 
-    const deals = flightResponse.data.data.itineraries.slice(0, 5).map(f => {
+    // Безопасное извлечение данных
+    const itineraries = flightResponse.data.itineraries || (flightResponse.data.data ? flightResponse.data.data.itineraries : null);
+
+    if (!itineraries) {
+      return res.json({ success: false, error: 'No deals found' });
+    }
+
+    const deals = itineraries.slice(0, 5).map(f => {
       const flightPrice = f.price.raw;
       const isCombo = type === 'combo';
       
-      // В режиме Combo добавляем динамическую стоимость отеля (от 150 до 400 USD за неделю)
       const mockHotelPrice = isCombo ? Math.floor(Math.random() * (400 - 150) + 150) : 0;
       const totalPrice = flightPrice + mockHotelPrice;
       
