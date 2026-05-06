@@ -27,6 +27,12 @@ const VACATION_TYPES = [
 
 const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
 
+// Глобальный логгер всех входящих событий
+bot.use((ctx, next) => {
+  console.log(`📥 [Telegram] Update received: ${ctx.updateType} from ${ctx.from ? ctx.from.id : 'unknown'}`);
+  return next();
+});
+
 // --- SESSION MOCK ---
 const sessions = {};
 
@@ -111,30 +117,31 @@ bot.action(/mode_(.+)/, async (ctx) => {
   session.mode = mode;
 
   ctx.editMessageText('✅ Configuration Complete! Searching for the best deals now...');
-  await generateAndSendDeal(session.cityId, 'beach', mode);
+  // Передаем id пользователя, чтобы бот знал, кому слать результат
+  await generateAndSendDeal(session.cityId, 'beach', mode, ctx.from.id);
 });
 
 bot.command('ping', (ctx) => {
   ctx.reply('📡 Nomad OS is Online and Connected!');
 });
 
-async function generateAndSendDeal(specificHubId = null, vacationType = null, mode = 'flight') {
-  console.log(`🔍 Hunting for ${vacationType || 'Any'} deals... Mode: ${mode}`);
+async function generateAndSendDeal(specificHubId = null, vacationType = null, mode = 'flight', targetChatId = null) {
+  const finalChatId = targetChatId || CHAT_ID;
+  console.log(`🔍 [Task] Searching for ${vacationType || 'Any'}... Mode: ${mode}, Target: ${finalChatId}`);
   
-  // Если hubId не передан, берем Берлин по умолчанию
   const hubsToSearch = specificHubId ? [{ id: specificHubId, name: 'Selected City' }] : [{ id: 'BER', name: 'Berlin' }];
   
   for (const hub of hubsToSearch) {
     try {
-      const destinations = ['ANY']; // Для теста ищем везде
-
-      for (const dest of destinations) {
-        console.log(`✈️ Checking Fly-Scraper: ${hub.id} -> ${dest}...`);
-        
-        const response = await axios.get('https://fly-scraper.p.rapidapi.com/v2/flights/search-roundtrip', {
-          params: { originSkyId: hub.id, destinationSkyId: dest },
-          headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': FLY_SCRAPER_HOST }
-        });
+      const dest = 'ANY';
+      const apiUrl = `https://${FLY_SCRAPER_HOST}/v2/flights/search-roundtrip`;
+      
+      console.log(`📡 [Network] Calling Fly-Scraper: ${hub.id} -> ${dest}`);
+      
+      const response = await axios.get(apiUrl, {
+        params: { originSkyId: hub.id, destinationSkyId: dest },
+        headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': FLY_SCRAPER_HOST }
+      });
 
         // ЛОГИРУЕМ СТРУКТУРУ (чтобы понять, где лежат данные)
         console.log('📡 API Response Keys:', Object.keys(response.data));
@@ -175,12 +182,12 @@ async function generateAndSendDeal(specificHubId = null, vacationType = null, mo
         const userLang = 'en'; 
         const t = i18n[userLang];
 
-        await bot.telegram.sendPhoto(CHAT_ID, { source: image }, {
+        await bot.telegram.sendPhoto(finalChatId, { source: image }, {
           caption: `🔥 **${t.new_deal}**\n💰 Price: ${flight.price.formatted}${isCombo ? ' (+ Hotel)' : ''}\n📍 ${hub.id} ✈ ${destinationName}\n\n[Book Now](https://www.skyscanner.net)`,
           parse_mode: 'Markdown'
         });
 
-        console.log(`🎉 Success! Message sent to ${CHAT_ID}`);
+        console.log(`🎉 Success! Message sent to ${finalChatId}`);
         break; 
       }
       
@@ -200,8 +207,10 @@ async function generateAndSendDeal(specificHubId = null, vacationType = null, mo
 setInterval(generateAndSendDeal, 1000 * 60 * 60 * 6);
 // generateAndSendDeal(); // УДАЛЯЕМ АВТО-СТАРТ, чтобы не ловить 429 при деплое
 
-bot.launch();
-console.log('🚀 Nomad OS Server is running...');
+bot.launch().then(() => {
+  console.log('✅ Telegraf Bot is Polling and Ready!');
+});
+console.log('🚀 Nomad OS Server is starting...');
 
 // --- MINI APP SERVER ---
 const PORT = process.env.PORT || 3000;
