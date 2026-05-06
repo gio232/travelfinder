@@ -27,6 +27,14 @@ const COUNTRY_HUBS = {
   'France': [
     { name: 'Paris', skyId: 'PARI', entityId: '27539733' },
     { name: 'Nice', skyId: 'NCE', entityId: '27539658' }
+  ],
+  'Spain': [
+    { name: 'Madrid', skyId: 'MAD', entityId: '27538749' },
+    { name: 'Barcelona', skyId: 'BCN', entityId: '27544055' }
+  ],
+  'Italy': [
+    { name: 'Rome', skyId: 'ROME', entityId: '27543886' },
+    { name: 'Milan', skyId: 'MILA', entityId: '27544033' }
   ]
 };
 
@@ -76,15 +84,35 @@ bot.action(/city_(.+)/, async (ctx) => {
 
 bot.action(/type_(.+)/, async (ctx) => {
   const typeId = ctx.match[1];
-  // Mock saving preference
+  ctx.reply('Step 4: When do you want to travel?', {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '📅 Next 30 Days', callback_data: `date_next30_${typeId}` }],
+        [{ text: '🗓 Next 3 Months', callback_data: `date_next90_${typeId}` }],
+        [{ text: '🚀 Anytime', callback_data: `date_any_${typeId}` }]
+      ]
+    }
+  });
+});
+
+bot.action(/date_(.+)_(.+)/, async (ctx) => {
+  const timeframe = ctx.match[1];
+  const typeId = ctx.match[2];
+  
   ctx.reply('✅ Profile Complete! Now you can find your perfect trip.', {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '🔥 Hot Deal of the Day', callback_data: 'search' }],
+        [{ text: '🔥 Hot Deal of the Day', callback_data: `search_${typeId}` }],
         [{ text: '⚙️ Settings', callback_data: 'settings' }]
       ]
     }
   });
+});
+
+bot.action(/search_(.+)/, async (ctx) => {
+  const typeId = ctx.match[1];
+  ctx.reply('🔍 Hunting for the Hot Deal of the Day based on your style...');
+  await generateAndSendDeal(null, typeId);
 });
 
 bot.command('settings', (ctx) => {
@@ -141,57 +169,65 @@ const ORIGIN_HUBS = [
   { name: 'London', skyId: 'LOND', entityId: '27544008' }
 ];
 
-async function generateAndSendDeal() {
-  console.log('🔍 Hunting for fresh combos across Europe...');
+async function generateAndSendDeal(specificHub = null, vacationType = null) {
+  console.log(`🔍 Hunting for ${vacationType ? vacationType : 'Any'} deals...`);
   
-  for (const hub of ORIGIN_HUBS) {
+  const hubsToSearch = specificHub ? [specificHub] : ORIGIN_HUBS;
+  
+  for (const hub of hubsToSearch) {
     try {
-      console.log(`✈️ Checking flights from ${hub.name}...`);
-      const flightResponse = await axios.get('https://sky-scrapper.p.rapidapi.com/api/v2/flights/searchFlightsComplete', {
-        params: { 
-          originSkyId: hub.skyId, 
-          destinationSkyId: 'ANY', 
-          originEntityId: hub.entityId, 
-          destinationEntityId: '', 
-          currency: 'USD' 
-        },
-        headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': 'sky-scrapper.p.rapidapi.com' }
-      });
+      // Определяем цели: если тип отдыха выбран, ищем по его тегам, иначе - ANY
+      const selectedType = VACATION_TYPES.find(t => t.id === vacationType);
+      const destinations = selectedType ? selectedType.tags : ['ANY'];
 
-      if (!flightResponse.data || !flightResponse.data.data || !flightResponse.data.data.itineraries) {
-        console.log(`⚠️ No data for ${hub.name}. Skipping.`);
-        continue;
+      for (const dest of destinations) {
+        console.log(`✈️ Checking ${hub.name} -> ${dest}...`);
+        
+        const flightResponse = await axios.get('https://sky-scrapper.p.rapidapi.com/api/v2/flights/searchFlightsComplete', {
+          params: { 
+            originSkyId: hub.skyId, 
+            destinationSkyId: dest, 
+            originEntityId: hub.entityId, 
+            destinationEntityId: '', 
+            currency: 'USD' 
+          },
+          headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': 'sky-scrapper.p.rapidapi.com' }
+        });
+
+        if (!flightResponse.data || !flightResponse.data.data || !flightResponse.data.data.itineraries) continue;
+
+        const flight = flightResponse.data.data.itineraries[0];
+        if (!flight) continue;
+
+        const destinationName = flight.legs[0].destination.name;
+        const htmlTemplate = fs.readFileSync(path.join(__dirname, 'ticket_template.html'), 'utf8');
+        
+        const image = await nodeHtmlToImage({
+          html: htmlTemplate,
+          content: {
+            ORIGIN: hub.name,
+            DESTINATION: destinationName,
+            HOTEL_NAME: 'Handpicked Elite Stay',
+            DEPARTURE_DATE: flight.legs[0].departure.split('T')[0],
+            NIGHTS: '7',
+            RATING: '4.8',
+            PRICE: flight.price.raw,
+            SAVINGS: '45'
+          }
+        });
+
+        const userLang = 'en'; 
+        const t = i18n[userLang];
+
+        await bot.telegram.sendPhoto(CHAT_ID, { source: image }, {
+          caption: `🔥 **${t.new_deal} (${selectedType ? selectedType.name : 'Top Choice'})**\n💰 ${t.price}: ${flight.price.formatted}\n📍 Route: ${hub.name} ✈ ${destinationName}\n\n[${t.checkout}](https://www.skyscanner.net)`,
+          parse_mode: 'Markdown'
+        });
+
+        console.log(`✅ Targeted deal from ${hub.name} sent!`);
+        break; // Отправляем один лучший вариант для хаба и переходим к следующему
       }
-
-      const flight = flightResponse.data.data.itineraries[0];
-      if (!flight) continue;
-
-      const destinationName = flight.legs[0].destination.name;
-      const htmlTemplate = fs.readFileSync(path.join(__dirname, 'ticket_template.html'), 'utf8');
       
-      const image = await nodeHtmlToImage({
-        html: htmlTemplate,
-        content: {
-          ORIGIN: hub.name,
-          DESTINATION: destinationName,
-          HOTEL_NAME: 'Premium Selection Hotel',
-          DEPARTURE_DATE: flight.legs[0].departure.split('T')[0],
-          NIGHTS: '5',
-          RATING: '4.7',
-          PRICE: flight.price.raw,
-          SAVINGS: '40'
-        }
-      });
-
-      const userLang = 'en'; 
-      const t = i18n[userLang];
-
-      await bot.telegram.sendPhoto(CHAT_ID, { source: image }, {
-        caption: `🔥 **${t.new_deal}**\n💰 ${t.price}: ${flight.price.formatted}\n📍 Route: ${hub.name} ✈ ${destinationName}\n\n[${t.checkout}](https://www.skyscanner.net)`,
-        parse_mode: 'Markdown'
-      });
-
-      console.log(`✅ Deal from ${hub.name} sent!`);
       await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (error) {
       console.error(`❌ Error scanning ${hub.name}:`, error.message);
