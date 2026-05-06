@@ -7,31 +7,16 @@ const http = require('http');
 const express = require('express'); // Добавляем Express для Mini App
 const app = express();
 
-// Load Localizations
+// Load Localizations & Hubs
 const i18n = JSON.parse(fs.readFileSync(path.join(__dirname, 'locales.json'), 'utf8'));
+const HUB_DATA = JSON.parse(fs.readFileSync(path.join(__dirname, 'hubs.json'), 'utf8'));
 
-// --- CONFIG (Using Environment Variables) ---
+// --- CONFIG ---
 const RAPID_API_KEY = process.env.RAPID_API_KEY || '297db5bccfmsh2a6dee75f1038d2p165a62jsn91af72450106';
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8601612357:AAGntRC84iVcnx2XyIbETUtIX8G38F-SKZQ';
 const CHAT_ID = process.env.CHAT_ID || '1157863036';
 
 const FLY_SCRAPER_HOST = 'fly-scraper.p.rapidapi.com';
-const SKY_SCRAPPER_HOST = 'sky-scrapper.p.rapidapi.com';
-
-// --- DATA MAPPING ---
-const COUNTRY_HUBS = {
-  'Germany': [{ name: 'Berlin', skyId: 'BER' }, { name: 'Munich', skyId: 'MUC' }, { name: 'Frankfurt', skyId: 'FRA' }],
-  'Poland': [{ name: 'Warsaw', skyId: 'WAW' }, { name: 'Krakow', skyId: 'KRK' }, { name: 'Gdansk', skyId: 'GDN' }],
-  'France': [{ name: 'Paris', skyId: 'PARI' }, { name: 'Nice', skyId: 'NCE' }, { name: 'Lyon', skyId: 'LYS' }],
-  'Spain': [{ name: 'Madrid', skyId: 'MAD' }, { name: 'Barcelona', skyId: 'BCN' }, { name: 'Malaga', skyId: 'AGP' }],
-  'Italy': [{ name: 'Rome', skyId: 'ROME' }, { name: 'Milan', skyId: 'MILA' }, { name: 'Venice', skyId: 'VCE' }],
-  'UK': [{ name: 'London', skyId: 'LOND' }, { name: 'Manchester', skyId: 'MAN' }, { name: 'Edinburgh', skyId: 'EDI' }],
-  'Norway': [{ name: 'Oslo', skyId: 'OSL' }, { name: 'Bergen', skyId: 'BGO' }],
-  'Switzerland': [{ name: 'Zurich', skyId: 'ZRH' }, { name: 'Geneva', skyId: 'GVA' }],
-  'Austria': [{ name: 'Vienna', skyId: 'VIE' }, { name: 'Salzburg', skyId: 'SZG' }],
-  'Netherlands': [{ name: 'Amsterdam', skyId: 'AMS' }],
-  'Portugal': [{ name: 'Lisbon', skyId: 'LIS' }, { name: 'Porto', skyId: 'OPO' }]
-};
 
 const VACATION_TYPES = [
   { id: 'beach', name: '🏝 Beach & Relax', tags: ['PMI', 'AYT', 'HER', 'TFS', 'BCN'] },
@@ -42,118 +27,91 @@ const VACATION_TYPES = [
 
 const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
 
-// --- DB HELPERS (Mock for Supabase) ---
-const db = {
-  async getUser(tgId) { return { lang: 'en', origin: 'BER' }; }, // Mock fetch
-  async updateUserLang(tgId, lang) { console.log(`DB: Updated ${tgId} to ${lang}`); },
-  async updateUserOrigin(tgId, city) { console.log(`DB: Updated ${tgId} to ${city}`); }
-};
+// --- SESSION MOCK ---
+const sessions = {};
 
+// --- WIZARD FLOW ---
 bot.start((ctx) => {
-  ctx.reply('🌍 Welcome to Nomad OS! Use our professional dashboard to set up your filters.', {
+  ctx.reply('🌍 Welcome to Nomad OS! Select your language / Выберите язык / Оберіть мову:', {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '🚀 Open Nomad Dashboard', web_app: { url: process.env.WEBAPP_URL || 'https://travelfinder-rigu.onrender.com' } }]
+        [{ text: '🇺🇸 English', callback_data: 'lang_en' }, { text: '🇷🇺 Русский', callback_data: 'lang_ru' }],
+        [{ text: '🇺🇦 Українська', callback_data: 'lang_ua' }, { text: '🇩🇪 Deutsch', callback_data: 'lang_de' }]
       ]
     }
   });
 });
 
-bot.command('app', (ctx) => {
-  ctx.reply('Open the dashboard to configure your travel style:', {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '💎 Launch Dashboard', web_app: { url: process.env.WEBAPP_URL || 'https://travelfinder-rigu.onrender.com' } }]
-      ]
-    }
-  });
-});
-
-// Handle Data from Mini App
-bot.on('web_app_data', async (ctx) => {
-  const data = JSON.parse(ctx.webAppData.data.json());
-  await db.updateUserOrigin(ctx.from.id, data.country);
-  // Additional logic for type...
-  ctx.reply(`✅ Dashboard updated! Style: ${data.type} from ${data.country}. Searching for deals...`);
-  await generateAndSendDeal(null, data.type);
-});
-
-bot.action(/type_(.+)/, async (ctx) => {
-  const typeId = ctx.match[1];
-  ctx.reply('Step 4: When do you want to travel?', {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '📅 Next 30 Days', callback_data: `date_next30_${typeId}` }],
-        [{ text: '🗓 Next 3 Months', callback_data: `date_next90_${typeId}` }],
-        [{ text: '🚀 Anytime', callback_data: `date_any_${typeId}` }]
-      ]
-    }
-  });
-});
-
-bot.action(/date_(.+)_(.+)/, async (ctx) => {
-  const timeframe = ctx.match[1];
-  const typeId = ctx.match[2];
-  
-  ctx.reply('✅ Profile Complete! Now you can find your perfect trip.', {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '🔥 Hot Deal of the Day', callback_data: `search_${typeId}` }],
-        [{ text: '⚙️ Settings', callback_data: 'settings' }]
-      ]
-    }
-  });
-});
-
-bot.action(/search_(.+)/, async (ctx) => {
-  const typeId = ctx.match[1];
-  ctx.reply('🔍 Hunting for the Hot Deal of the Day based on your style...');
-  await generateAndSendDeal(null, typeId);
-});
-
-bot.command('settings', (ctx) => {
-  ctx.reply('🛠 **Nomad OS Settings**', {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '🌐 Change Language', callback_data: 'change_lang' }],
-        [{ text: '✈ Set Origin City', callback_data: 'set_origin' }],
-        [{ text: '💳 Subscription Status', callback_data: 'check_sub' }]
-      ]
-    }
-  });
-});
-
-bot.command('search', async (ctx) => {
-  ctx.reply('🔍 Searching for the best deals... Please wait.');
-  await generateAndSendDeal();
-});
-
-bot.action('settings', (ctx) => {
-  ctx.reply('🛠 **Settings Menu** (Logic Coming Soon)');
-});
-
-bot.action('search', async (ctx) => {
-  ctx.reply('🔍 Hunting for the Hot Deal of the Day...');
-  await generateAndSendDeal();
-});
-
-// Handle Language Selection
-bot.action('change_lang', (ctx) => {
-  ctx.reply('Choose your language:', {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: 'English 🇺🇸', callback_data: 'lang_en' }, { text: 'Deutsch 🇩🇪', callback_data: 'lang_de' }],
-        [{ text: 'Polski 🇵🇱', callback_data: 'lang_pl' }]
-      ]
-    }
-  });
-});
-
-bot.action(/lang_(.+)/, async (ctx) => {
+bot.action(/lang_(.+)/, (ctx) => {
   const lang = ctx.match[1];
-  await db.updateUserLang(ctx.from.id, lang);
-  ctx.answerCbQuery(`Language set to ${lang.toUpperCase()}`);
-  ctx.reply(`✅ Language updated!`);
+  sessions[ctx.from.id] = { lang };
+  
+  const welcomeText = {
+    en: 'Step 2: Choose your origin country:',
+    ru: 'Шаг 2: Выберите страну вылета:',
+    ua: 'Крок 2: Оберіть країну вильоту:',
+    de: 'Schritt 2: Wählen Sie Ihr Herkunftsland:'
+  };
+
+  ctx.editMessageText(welcomeText[lang] || welcomeText.en, {
+    reply_markup: {
+      inline_keyboard: Object.keys(HUB_DATA).map(c => [
+        { text: HUB_DATA[c].name[lang] || c, callback_data: `country_${c}` }
+      ])
+    }
+  });
+});
+
+bot.action(/country_(.+)/, (ctx) => {
+  const country = ctx.match[1];
+  const session = sessions[ctx.from.id];
+  session.country = country;
+  
+  const cityText = {
+    en: 'Step 3: Choose your city:',
+    ru: 'Шаг 3: Выберите ваш город:',
+    ua: 'Крок 3: Оберіть ваше місто:',
+    de: 'Schritt 3: Wählen Sie Ihre Stadt:'
+  };
+
+  ctx.editMessageText(cityText[session.lang] || cityText.en, {
+    reply_markup: {
+      inline_keyboard: HUB_DATA[country].hubs.map(h => [
+        { text: h.names[session.lang] || h.city, callback_data: `city_${h.id}` }
+      ])
+    }
+  });
+});
+
+bot.action(/city_(.+)/, (ctx) => {
+  const cityId = ctx.match[1];
+  const session = sessions[ctx.from.id];
+  session.cityId = cityId;
+
+  const modeText = {
+    en: 'Step 4: Choose service mode:',
+    ru: 'Шаг 4: Выберите режим:',
+    ua: 'Крок 4: Оберіть режим:',
+    de: 'Schritt 4: Wählen Sie den Modus:'
+  };
+
+  ctx.editMessageText(modeText[session.lang], {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '✈️ Only Flight', callback_data: 'mode_flight' }],
+        [{ text: '🏨 Flight + Hotel', callback_data: 'mode_combo' }]
+      ]
+    }
+  });
+});
+
+bot.action(/mode_(.+)/, async (ctx) => {
+  const mode = ctx.match[1];
+  const session = sessions[ctx.from.id];
+  session.mode = mode;
+
+  ctx.editMessageText('✅ Configuration Complete! Searching for the best deals now...');
+  await generateAndSendDeal(session.cityId, 'beach', mode);
 });
 
 // --- APP LOGIC ---

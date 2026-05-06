@@ -1,26 +1,61 @@
 {
-  "Germany": [{"name": "Berlin", "id": "BER"}, {"name": "Munich", "id": "MUC"}, {"name": "Frankfurt", "id": "FRA"}],
-  "Poland": [{"name": "Warsaw", "id": "WAW"}, {"name": "Krakow", "id": "KRK"}, {"name": "Gdansk", "id": "GDN"}],
-  "Ukraine": [{"name": "Kyiv", "id": "IEV"}, {"name": "Lviv", "id": "LWO"}, {"name": "Odesa", "id": "ODS"}],
-  "France": [{"name": "Paris", "id": "PARI"}, {"name": "Nice", "id": "NCE"}],
-  "Spain": [{"name": "Madrid", "id": "MAD"}, {"name": "Barcelona", "id": "BCN"}],
-  "Italy": [{"name": "Rome", "id": "ROME"}, {"name": "Milan", "id": "MILA"}],
-  "UK": [{"name": "London", "id": "LOND"}, {"name": "Manchester", "id": "MAN"}],
-  "Turkey": [{"name": "Istanbul", "id": "ISTA"}, {"name": "Antalya", "id": "AYT"}],
-  "Georgia": [{"name": "Tbilisi", "id": "TBS"}, {"name": "Batumi", "id": "BUS"}, {"name": "Kutaisi", "id": "KUT"}],
-  "Norway": [{"name": "Oslo", "id": "OSL"}],
-  "Switzerland": [{"name": "Zurich", "id": "ZRH"}, {"name": "Geneva", "id": "GVA"}],
-  "Austria": [{"name": "Vienna", "id": "VIE"}],
-  "Czech Republic": [{"name": "Prague", "id": "PRG"}],
-  "Hungary": [{"name": "Budapest", "id": "BUD"}],
-  "Portugal": [{"name": "Lisbon", "id": "LIS"}],
-  "Greece": [{"name": "Athens", "id": "ATH"}],
-  "Romania": [{"name": "Bucharest", "id": "OTP"}],
-  "Bulgaria": [{"name": "Sofia", "id": "SOF"}],
-  "Kazakhstan": [{"name": "Almaty", "id": "ALA"}, {"name": "Astana", "id": "NQZ"}],
-  "Moldova": [{"name": "Chisinau", "id": "KIV"}],
-  "Estonia": [{"name": "Tallinn", "id": "TLL"}],
-  "Latvia": [{"name": "Riga", "id": "RIX"}],
-  "Lithuania": [{"name": "Vilnius", "id": "VNO"}],
-  "Serbia": [{"name": "Belgrade", "id": "BEG"}]
+  "Germany": {
+    "name": { "en": "Germany", "de": "Deutschland", "ru": "Германия", "ua": "Німеччина" },
+    "hubs": [
+      { "city": "Berlin", "names": { "en": "Berlin", "de": "Berlin", "ru": "Берлин", "ua": "Берлін" }, "id": "BER" },
+      { "city": "Munich", "names": { "en": "Munich", "de": "München", "ru": "Мюнхен", "ua": "Мюнхен" }, "id": "MUC" },
+      { "city": "Frankfurt", "names": { "en": "Frankfurt", "de": "Frankfurt", "ru": "Франкфурт", "ua": "Франкфурт" }, "id": "FRA" },
+      { "city": "Hamburg", "names": { "en": "Hamburg", "de": "Hamburg", "ru": "Гамбург", "ua": "Гамбург" }, "id": "HAM" },
+      { "city": "Dusseldorf", "names": { "en": "Dusseldorf", "de": "Düsseldorf", "ru": "Дюссельдорф", "ua": "Дюссельдорф" }, "id": "DUS" }
+    ]
+  },
+  "Poland": {
+    "name": { "en": "Poland", "de": "Polen", "ru": "Польша", "ua": "Польща" },
+    "hubs": [
+      { "city": "Warsaw", "names": { "en": "Warsaw", "de": "Warschau", "ru": "Варшава", "ua": "Варшава" }, "id": "WAW" },
+      { "city": "Krakow", "names": { "en": "Krakow", "de": "Krakau", "ru": "Краков", "ua": "Краків" }, "id": "KRK" },
+      { "city": "Gdansk", "names": { "en": "Gdansk", "de": "Danzig", "ru": "Гданьск", "ua": "Гданськ" }, "id": "GDN" },
+      { "city": "Wroclaw", "names": { "en": "Wroclaw", "de": "Breslau", "ru": "Вроцлав", "ua": "Вроцлав" }, "id": "WRO" }
+    ]
+  },
+  "France": {
+    "name": { "en": "France", "de": "Frankreich", "ru": "Франция", "ua": "Франція" },
+    "hubs": [
+      { "city": "Paris", "names": { "en": "Paris", "de": "Paris", "ru": "Париж", "ua": "Париж" }, "id": "PARI" },
+      { "city": "Nice", "names": { "en": "Nice", "de": "Nizza", "ru": "Ницца", "ua": "Ніцца" }, "id": "NCE" },
+      { "city": "Lyon", "names": { "en": "Lyon", "de": "Lyon", "ru": "Лион", "ua": "Ліон" }, "id": "LYS" }
+    ]
+  },
+  "Italy": {
+    "name": { "en": "Italy", "de": "Italien", "ru": "Италия", "ua": "Італія" },
+    "hubs": [
+      { "city": "Rome", "names": { "en": "Rome", "de": "Rom", "ru": "Рим", "ua": "Рим" }, "id": "ROME" },
+      { "city": "Milan", "names": { "en": "Milan", "de": "Mailand", "ru": "Милан", "ua": "Мілан" }, "id": "MILA" },
+      { "city": "Venice", "names": { "en": "Venice", "de": "Venedig", "ru": "Венеция", "ua": "Венеція" }, "id": "VCE" },
+      { "city": "Naples", "names": { "en": "Naples", "de": "Neapel", "ru": "Неаполь", "ua": "Неаполь" }, "id": "NAP" }
+    ]
+  },
+  "Spain": {
+    "name": { "en": "Spain", "de": "Spanien", "ru": "Испания", "ua": "Іспанія" },
+    "hubs": [
+      { "city": "Madrid", "names": { "en": "Madrid", "de": "Madrid", "ru": "Мадрид", "ua": "Мадрид" }, "id": "MAD" },
+      { "city": "Barcelona", "names": { "en": "Barcelona", "de": "Barcelona", "ru": "Барселона", "ua": "Барселона" }, "id": "BCN" },
+      { "city": "Malaga", "names": { "en": "Malaga", "de": "Malaga", "ru": "Малага", "ua": "Малага" }, "id": "AGP" }
+    ]
+  },
+  "Turkey": {
+    "name": { "en": "Turkey", "de": "Türkei", "ru": "Турция", "ua": "Туреччина" },
+    "hubs": [
+      { "city": "Istanbul", "names": { "en": "Istanbul", "de": "Istanbul", "ru": "Стамбул", "ua": "Стамбул" }, "id": "ISTA" },
+      { "city": "Antalya", "names": { "en": "Antalya", "de": "Antalya", "ru": "Анталья", "ua": "Анталія" }, "id": "AYT" }
+    ]
+  },
+  "Georgia": {
+    "name": { "en": "Georgia", "de": "Georgien", "ru": "Грузия", "ua": "Грузія" },
+    "hubs": [
+      { "city": "Tbilisi", "names": { "en": "Tbilisi", "de": "Tiflis", "ru": "Тбилиси", "ua": "Тбілісі" }, "id": "TBS" },
+      { "city": "Batumi", "names": { "en": "Batumi", "de": "Batumi", "ru": "Батуми", "ua": "Батумі" }, "id": "BUS" },
+      { "city": "Kutaisi", "names": { "en": "Kutaisi", "de": "Kutaissi", "ru": "Кутаиси", "ua": "Кутаїсі" }, "id": "KUT" }
+    ]
+  }
 }
