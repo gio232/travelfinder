@@ -1,0 +1,26 @@
+{
+  "en": {
+    "welcome": "Welcome to Nomad OS! Initialize your flight search.",
+    "new_deal": "🔥 NEW SMART COMBO FOUND!",
+    "price": "Price",
+    "savings": "Savings",
+    "nights": "Nights",
+    "checkout": "View Deal"
+  },
+  "de": {
+    "welcome": "Willkommen bei Nomad OS! Starten Sie Ihre Flugsuche.",
+    "new_deal": "🔥 NEUES SMART-KOMBO GEFUNDEN!",
+    "price": "Preis",
+    "savings": "Ersparnis",
+    "nights": "Nächte",
+    "checkout": "Angebot ansehen"
+  },
+  "pl": {
+    "welcome": "Witaj w Nomad OS! Rozpocznij wyszukiwanie lotów.",
+    "new_deal": "🔥 ZNALEZIONO NOWY SMART COMBO!",
+    "price": "Cena",
+    "savings": "Oszczędności",
+    "nights": "Noce",
+    "checkout": "Zobacz ofertę"
+  }
+}

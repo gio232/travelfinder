@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Intel | Smart Combo Finder</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Auth Screen -->
+        <section id="login-screen">
+            <div class="login-card glass">
+                <h2 class="text-gradient">TRAVEL INTEL</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">Secure Terminal Access</p>
+                <input type="password" id="password-input" placeholder="Enter security key...">
+                <button id="login-btn" class="primary">Initialize Session</button>
+                <p id="login-error" style="color: var(--error); margin-top: 1rem; font-size: 0.8rem; display: none;">Invalid access key.</p>
+            </div>
+        </section>
+
+        <!-- Dashboard -->
+        <header>
+            <div class="brand">
+                <h1 class="text-gradient">NOMAD OS v1.0</h1>
+            </div>
+            <div class="ai-status">
+                <div class="pulse"></div>
+                <span>AI Scraper: Active (Analyzing Market)</span>
+            </div>
+            <button id="logout-btn" style="background: none; border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 8px 16px; border-radius: 6px; cursor: pointer;">Logout</button>
+        </header>
+
+        <main id="dashboard" class="container">
+            <section class="stats-grid">
+                <div class="stat-card glass">
+                    <div class="label">Live Combos</div>
+                    <div class="value" id="stat-combos">1,284</div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="label">Market Volatility</div>
+                    <div class="value" style="color: var(--warning);">High</div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="label">Savings Potential</div>
+                    <div class="value" style="color: var(--success);">Up to 42%</div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="label">Active Agents</div>
+                    <div class="value">24</div>
+                </div>
+            </section>
+
+            <section class="filters" style="margin-bottom: 2rem; display: flex; gap: 1rem;">
+                <select class="glass" style="padding: 10px; color: white; border: 1px solid var(--glass-border); background: var(--bg-secondary);">
+                    <option>Origin: Europe (All)</option>
+                    <option>Germany</option>
+                    <option>France</option>
+                    <option>Poland</option>
+                </select>
+                <select class="glass" style="padding: 10px; color: white; border: 1px solid var(--glass-border); background: var(--bg-secondary);">
+                    <option>Max Price: Unlimited</option>
+                    <option>$500</option>
+                    <option>$1000</option>
+                </select>
+            </section>
+
+            <div class="deals-grid" id="deals-container">
+                <!-- Deal cards will be injected here -->
+            </div>
+        </main>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

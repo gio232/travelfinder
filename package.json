@@ -1,0 +1,12 @@
+{
+  "name": "travel-intel-os",
+  "version": "1.0.0",
+  "description": "Premium Travel Intelligence Dashboard",
+  "main": "main.js",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}
