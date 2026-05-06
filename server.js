@@ -3,7 +3,9 @@ const { Telegraf } = require('telegraf');
 const nodeHtmlToImage = require('node-html-to-image');
 const fs = require('fs');
 const path = require('path');
-const http = require('http'); // Добавляем модуль http
+const http = require('http');
+const express = require('express'); // Добавляем Express для Mini App
+const app = express();
 
 // Load Localizations
 const i18n = JSON.parse(fs.readFileSync(path.join(__dirname, 'locales.json'), 'utf8'));
@@ -54,32 +56,33 @@ const db = {
   async updateUserOrigin(tgId, city) { console.log(`DB: Updated ${tgId} to ${city}`); }
 };
 
-// --- TELEGRAM INTERFACE (Wizard Flow) ---
 bot.start((ctx) => {
-  ctx.reply('🌍 Welcome to Nomad OS! Let\'s set up your profile.\n\nStep 1: Choose your country:', {
+  ctx.reply('🌍 Welcome to Nomad OS! Use our professional dashboard to set up your filters.', {
     reply_markup: {
-      inline_keyboard: Object.keys(COUNTRY_HUBS).map(country => [{ text: country, callback_data: `select_country_${country}` }])
+      inline_keyboard: [
+        [{ text: '🚀 Open Nomad Dashboard', web_app: { url: process.env.WEBAPP_URL || 'https://travelfinder.onrender.com' } }]
+      ]
     }
   });
 });
 
-bot.action(/select_country_(.+)/, (ctx) => {
-  const country = ctx.match[1];
-  ctx.reply(`Step 2: Choose your hub in ${country}:`, {
+bot.command('app', (ctx) => {
+  ctx.reply('Open the dashboard to configure your travel style:', {
     reply_markup: {
-      inline_keyboard: COUNTRY_HUBS[country].map(hub => [{ text: hub.name, callback_data: `city_${hub.skyId}` }])
+      inline_keyboard: [
+        [{ text: '💎 Launch Dashboard', web_app: { url: process.env.WEBAPP_URL || 'https://travelfinder.onrender.com' } }]
+      ]
     }
   });
 });
 
-bot.action(/city_(.+)/, async (ctx) => {
-  const cityCode = ctx.match[1];
-  await db.updateUserOrigin(ctx.from.id, cityCode);
-  ctx.reply('Step 3: What kind of vacation do you prefer?', {
-    reply_markup: {
-      inline_keyboard: VACATION_TYPES.map(type => [{ text: type.name, callback_data: `type_${type.id}` }])
-    }
-  });
+// Handle Data from Mini App
+bot.on('web_app_data', async (ctx) => {
+  const data = JSON.parse(ctx.webAppData.data.json());
+  await db.updateUserOrigin(ctx.from.id, data.country);
+  // Additional logic for type...
+  ctx.reply(`✅ Dashboard updated! Style: ${data.type} from ${data.country}. Searching for deals...`);
+  await generateAndSendDeal(null, data.type);
 });
 
 bot.action(/type_(.+)/, async (ctx) => {
@@ -242,13 +245,15 @@ generateAndSendDeal();
 bot.launch();
 console.log('🚀 Nomad OS Server is running...');
 
-// --- RENDER PORT HACK ---
-// Render требует, чтобы Web Service слушал порт. Создаем "пустой" сервер.
+// --- MINI APP SERVER ---
 const PORT = process.env.PORT || 3000;
-http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Nomad OS is Alive\n');
-}).listen(PORT, () => {
-  console.log(`📡 Port Hack: Listening on port ${PORT}`);
+app.use(express.static('public')); // Раздаем файлы из папки public
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`📡 Mini App & Port Hack: Listening on port ${PORT}`);
 });
 

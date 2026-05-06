@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nomad OS Intelligence</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="header">
+      <h1>NOMAD OS</h1>
+      <p>Intelligence Travel Terminal</p>
+    </div>
+
+    <div class="card">
+      <h3>1. Select Country</h3>
+      <div class="grid" id="country-grid">
+        <div class="option-btn" onclick="selectCountry('Germany')">🇩🇪 Germany</div>
+        <div class="option-btn" onclick="selectCountry('Poland')">🇵🇱 Poland</div>
+        <div class="option-btn" onclick="selectCountry('France')">🇫🇷 France</div>
+        <div class="option-btn" onclick="selectCountry('Spain')">🇪🇸 Spain</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>2. Vacation Style</h3>
+      <div class="grid" id="type-grid">
+        <div class="option-btn" onclick="selectType('beach')">🏝 Beach</div>
+        <div class="option-btn" onclick="selectType('mountains')">🏔 Mountains</div>
+        <div class="option-btn" onclick="selectType('city')">🏛 City</div>
+        <div class="option-btn" onclick="selectType('active')">🥾 Active</div>
+      </div>
+    </div>
+
+    <div style="height: 100px;"></div>
+
+    <button class="footer-btn" onclick="saveProfile()">SAVE & SEARCH DEALS</button>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    let selectedCountry = '';
+    let selectedType = '';
+
+    function selectCountry(country) {
+      selectedCountry = country;
+      document.querySelectorAll('#country-grid .option-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if(btn.innerText.includes(country)) btn.classList.add('active');
+      });
+    }
+
+    function selectType(type) {
+      selectedType = type;
+      document.querySelectorAll('#type-grid .option-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if(btn.innerText.toLowerCase().includes(type)) btn.classList.add('active');
+      });
+    }
+
+    function saveProfile() {
+      if(!selectedCountry || !selectedType) {
+        alert('Please select both country and style!');
+        return;
+      }
+      
+      const data = {
+        country: selectedCountry,
+        type: selectedType
+      };
+      
+      tg.sendData(JSON.stringify(data));
+      tg.close();
+    }
+  </script>
+</body>
+</html>
