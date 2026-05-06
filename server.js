@@ -13,6 +13,30 @@ const RAPID_API_KEY = process.env.RAPID_API_KEY || '297db5bccfmsh2a6dee75f1038d2
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8601612357:AAGntRC84iVcnx2XyIbETUtIX8G38F-SKZQ';
 const CHAT_ID = process.env.CHAT_ID || '1157863036';
 
+// --- DATA MAPPING ---
+const COUNTRY_HUBS = {
+  'Germany': [
+    { name: 'Berlin', skyId: 'BER', entityId: '27547050' },
+    { name: 'Munich', skyId: 'MUC', entityId: '27536640' },
+    { name: 'Frankfurt', skyId: 'FRA', entityId: '27541623' }
+  ],
+  'Poland': [
+    { name: 'Warsaw', skyId: 'WAW', entityId: '27537960' },
+    { name: 'Krakow', skyId: 'KRK', entityId: '27543209' }
+  ],
+  'France': [
+    { name: 'Paris', skyId: 'PARI', entityId: '27539733' },
+    { name: 'Nice', skyId: 'NCE', entityId: '27539658' }
+  ]
+};
+
+const VACATION_TYPES = [
+  { id: 'beach', name: '🏝 Beach & Relax', tags: ['PMI', 'AYT', 'HER', 'TFS', 'BCN'] },
+  { id: 'mountains', name: '🏔 Mountains & Ski', tags: ['INN', 'GVA', 'KUT', 'ZRH'] },
+  { id: 'city', name: '🏛 City Break', tags: ['FCO', 'MAD', 'BUD', 'PRG', 'VCE'] },
+  { id: 'active', name: '🥾 Active & Nature', tags: ['FNC', 'PDL', 'OSL', 'REK'] }
+];
+
 const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
 
 // --- DB HELPERS (Mock for Supabase) ---
@@ -22,9 +46,45 @@ const db = {
   async updateUserOrigin(tgId, city) { console.log(`DB: Updated ${tgId} to ${city}`); }
 };
 
-// --- TELEGRAM INTERFACE ---
+// --- TELEGRAM INTERFACE (Wizard Flow) ---
 bot.start((ctx) => {
-  ctx.reply('🌍 Welcome to Nomad OS! Use /settings to configure your filters.');
+  ctx.reply('🌍 Welcome to Nomad OS! Let\'s set up your profile.\n\nStep 1: Choose your country:', {
+    reply_markup: {
+      inline_keyboard: Object.keys(COUNTRY_HUBS).map(country => [{ text: country, callback_data: `select_country_${country}` }])
+    }
+  });
+});
+
+bot.action(/select_country_(.+)/, (ctx) => {
+  const country = ctx.match[1];
+  ctx.reply(`Step 2: Choose your hub in ${country}:`, {
+    reply_markup: {
+      inline_keyboard: COUNTRY_HUBS[country].map(hub => [{ text: hub.name, callback_data: `city_${hub.skyId}` }])
+    }
+  });
+});
+
+bot.action(/city_(.+)/, async (ctx) => {
+  const cityCode = ctx.match[1];
+  await db.updateUserOrigin(ctx.from.id, cityCode);
+  ctx.reply('Step 3: What kind of vacation do you prefer?', {
+    reply_markup: {
+      inline_keyboard: VACATION_TYPES.map(type => [{ text: type.name, callback_data: `type_${type.id}` }])
+    }
+  });
+});
+
+bot.action(/type_(.+)/, async (ctx) => {
+  const typeId = ctx.match[1];
+  // Mock saving preference
+  ctx.reply('✅ Profile Complete! Now you can find your perfect trip.', {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '🔥 Hot Deal of the Day', callback_data: 'search' }],
+        [{ text: '⚙️ Settings', callback_data: 'settings' }]
+      ]
+    }
+  });
 });
 
 bot.command('settings', (ctx) => {
@@ -44,24 +104,13 @@ bot.command('search', async (ctx) => {
   await generateAndSendDeal();
 });
 
-// Handle Origin City Selection
-bot.action('set_origin', (ctx) => {
-  ctx.reply('Select your primary departure hub:', {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: 'Berlin 🇩🇪', callback_data: 'city_BER' }, { text: 'Warsaw 🇵🇱', callback_data: 'city_WAW' }],
-        [{ text: 'Paris 🇫🇷', callback_data: 'city_PAR' }, { text: 'Prague 🇨🇿', callback_data: 'city_PRG' }],
-        [{ text: 'London 🇬🇧', callback_data: 'city_LON' }, { text: 'Munich 🇩🇪', callback_data: 'city_MUC' }]
-      ]
-    }
-  });
+bot.action('settings', (ctx) => {
+  ctx.reply('🛠 **Settings Menu** (Logic Coming Soon)');
 });
 
-bot.action(/city_(.+)/, async (ctx) => {
-  const cityCode = ctx.match[1];
-  await db.updateUserOrigin(ctx.from.id, cityCode);
-  ctx.answerCbQuery(`Origin set to ${cityCode}`);
-  ctx.reply(`✈️ Departure city updated to **${cityCode}**! Now you will receive deals from this hub.`);
+bot.action('search', async (ctx) => {
+  ctx.reply('🔍 Hunting for the Hot Deal of the Day...');
+  await generateAndSendDeal();
 });
 
 // Handle Language Selection
@@ -84,54 +133,69 @@ bot.action(/lang_(.+)/, async (ctx) => {
 });
 
 // --- APP LOGIC ---
+const ORIGIN_HUBS = [
+  { name: 'Berlin', skyId: 'BER', entityId: '27547050' },
+  { name: 'Warsaw', skyId: 'WAW', entityId: '27537960' },
+  { name: 'Paris', skyId: 'PARI', entityId: '27539733' },
+  { name: 'Prague', skyId: 'PRG', entityId: '27545465' },
+  { name: 'London', skyId: 'LOND', entityId: '27544008' }
+];
+
 async function generateAndSendDeal() {
-  console.log('🔍 Hunting for fresh combos...');
+  console.log('🔍 Hunting for fresh combos across Europe...');
   
-  try {
-    const flightResponse = await axios.get('https://sky-scrapper.p.rapidapi.com/api/v2/flights/searchFlightsComplete', {
-      params: { originSkyId: 'LOND', destinationSkyId: 'NYCA', originEntityId: '27544008', destinationEntityId: '27537542', currency: 'USD' },
-      headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': 'sky-scrapper.p.rapidapi.com' }
-    });
+  for (const hub of ORIGIN_HUBS) {
+    try {
+      console.log(`✈️ Checking flights from ${hub.name}...`);
+      const flightResponse = await axios.get('https://sky-scrapper.p.rapidapi.com/api/v2/flights/searchFlightsComplete', {
+        params: { 
+          originSkyId: hub.skyId, 
+          destinationSkyId: 'ANY', 
+          originEntityId: hub.entityId, 
+          destinationEntityId: '', 
+          currency: 'USD' 
+        },
+        headers: { 'x-rapidapi-key': RAPID_API_KEY, 'x-rapidapi-host': 'sky-scrapper.p.rapidapi.com' }
+      });
 
-    // Валидация данных (чтобы не было ошибки itineraries)
-    if (!flightResponse.data || !flightResponse.data.data || !flightResponse.data.data.itineraries) {
-      console.log('⚠️ API returned no data or reached limits. Skipping this cycle.');
-      return;
-    }
-
-    const flight = flightResponse.data.data.itineraries[0];
-    if (!flight) {
-      console.log('ℹ️ No itineraries found for these parameters.');
-      return;
-    }
-
-    const htmlTemplate = fs.readFileSync(path.join(__dirname, 'ticket_template.html'), 'utf8');
-    
-    const image = await nodeHtmlToImage({
-      html: htmlTemplate,
-      content: {
-        ORIGIN: 'London',
-        DESTINATION: 'New York',
-        HOTEL_NAME: 'Premium Selection Hotel',
-        DEPARTURE_DATE: flight.legs[0].departure.split('T')[0],
-        NIGHTS: '7',
-        RATING: '4.8',
-        PRICE: flight.price.raw,
-        SAVINGS: '35'
+      if (!flightResponse.data || !flightResponse.data.data || !flightResponse.data.data.itineraries) {
+        console.log(`⚠️ No data for ${hub.name}. Skipping.`);
+        continue;
       }
-    });
 
-    const userLang = 'en'; 
-    const t = i18n[userLang];
+      const flight = flightResponse.data.data.itineraries[0];
+      if (!flight) continue;
 
-    await bot.telegram.sendPhoto(CHAT_ID, { source: image }, {
-      caption: `🔥 **${t.new_deal}**\n💰 ${t.price}: ${flight.price.formatted}\n📍 Route: London ✈ New York\n\n[${t.checkout}](https://www.skyscanner.net)`,
-      parse_mode: 'Markdown'
-    });
+      const destinationName = flight.legs[0].destination.name;
+      const htmlTemplate = fs.readFileSync(path.join(__dirname, 'ticket_template.html'), 'utf8');
+      
+      const image = await nodeHtmlToImage({
+        html: htmlTemplate,
+        content: {
+          ORIGIN: hub.name,
+          DESTINATION: destinationName,
+          HOTEL_NAME: 'Premium Selection Hotel',
+          DEPARTURE_DATE: flight.legs[0].departure.split('T')[0],
+          NIGHTS: '5',
+          RATING: '4.7',
+          PRICE: flight.price.raw,
+          SAVINGS: '40'
+        }
+      });
 
-    console.log('✅ Deal sent to Telegram!');
-  } catch (error) {
-    console.error('❌ Error in generator:', error.message);
+      const userLang = 'en'; 
+      const t = i18n[userLang];
+
+      await bot.telegram.sendPhoto(CHAT_ID, { source: image }, {
+        caption: `🔥 **${t.new_deal}**\n💰 ${t.price}: ${flight.price.formatted}\n📍 Route: ${hub.name} ✈ ${destinationName}\n\n[${t.checkout}](https://www.skyscanner.net)`,
+        parse_mode: 'Markdown'
+      });
+
+      console.log(`✅ Deal from ${hub.name} sent!`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } catch (error) {
+      console.error(`❌ Error scanning ${hub.name}:`, error.message);
+    }
   }
 }
 
